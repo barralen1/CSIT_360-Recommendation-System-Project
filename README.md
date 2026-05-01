@@ -39,9 +39,18 @@ The dataset contains the following six features:
 ## How to Install Dependencies
 
 Ensure you have **Python 3.x** installed. Then install the required libraries using pip:
+pip install -r requirements.txt
 
+## How to Run the Code
 
+1. **Clone the repository:**
+git clone https://github.com/barralen1/CSIT_360-Recommendation-System-Project.git   
 
+2. **Place the dataset file** (`movie-ratings.txt`) in the project directory or the designated `/data` folder.
+
+3. **Run the main scripts:**
+   jupyter notebook 01_eda.ipynb, Model_Comparison (1).ipynb
+   
 ## Summary of Results
 
 Two recommendation algorithms were implemented and evaluated using **RMSE** 
