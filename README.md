@@ -74,10 +74,10 @@ The project also includes both optional CSIT 360 bonus opportunities:
 
 | Model | K | Precision@K | Recall@K |
 |-------|---|-------------|----------|
-| Global Average | 5 | 0.0092 | 0.0461 |
-| Global Average | 10 | 0.0099 | 0.0992 |
-| Item-Based CF | 5 | 0.0269 | 0.1346 |
-| Item-Based CF | 10 | 0.0235 | 0.2349 |
+| Global Average | 5 | 0.0100 | 0.0502 |
+| Global Average | 10 | 0.0100 | 0.1001 |
+| Item-Based CF | 5 | 0.0275 | 0.1375 |
+| Item-Based CF | 10 | 0.0237 | 0.2367 |
 
 2. **Trust Network Summary:** The `trusts.txt` file was analyzed as an optional trust-network component. It contains 40,133 trust links, 1,438 unique trustors, 4,299 unique trustees, and 4,658 unique users in the trust network. The average trust rating is 1.0, with no duplicate trust links and no self-trust links.
 
