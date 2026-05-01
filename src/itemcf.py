@@ -1,68 +1,90 @@
-import pandas as pd
-from sklearn.metrics import mean_squared_error, mean_absolute_error
-!pip install scikit-surprise
-!pip install "numpy<2.0"
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
+from scipy.sparse import csr_matrix
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import normalize
 
-column_names = [
-    "userId",
-    "movieId",
-    "categoryId",
-    "reviewId",
-    "rating",
-    "reviewDate"
-]
 
-df = pd.read_csv(
-    "data/raw/movie-ratings.txt",
-    sep=",",
-    names=column_names,
-    header=None
-)
+ROOT = Path(__file__).resolve().parents[1]
+RATINGS_PATH = ROOT / "data" / "processed" / "cleaned_ratings.csv"
 
-print("Original Shape:", df.shape)
 
-df = df.drop_duplicates()
+def load_ratings():
+    df = pd.read_csv(RATINGS_PATH)
+    return df[["userId", "movieId", "rating"]].drop_duplicates()
 
-print("After Removing Duplicates:", df.shape)
 
-print("\nMissing Values:")
-print(df.isnull().sum())
+def build_item_user_matrix(train):
+    user_codes, users = pd.factorize(train["userId"], sort=True)
+    item_codes, items = pd.factorize(train["movieId"], sort=True)
+    ratings = train["rating"].astype(float).to_numpy()
 
-df.to_csv("cleaned_ratings.csv", index=False)
+    item_user = csr_matrix(
+        (ratings, (item_codes, user_codes)),
+        shape=(len(items), len(users)),
+    )
+    normalized = normalize(item_user, norm="l2", axis=1)
 
-print("\nCleaned dataset saved successfully.")
+    user_lookup = {user_id: idx for idx, user_id in enumerate(users)}
+    item_lookup = {movie_id: idx for idx, movie_id in enumerate(items)}
+    user_items = (
+        pd.DataFrame(
+            {
+                "userId": train["userId"].to_numpy(),
+                "item_idx": item_codes,
+                "rating": ratings,
+            }
+        )
+        .groupby("userId")[["item_idx", "rating"]]
+        .apply(lambda x: (x["item_idx"].to_numpy(), x["rating"].to_numpy()))
+        .to_dict()
+    )
 
-from surprise import Dataset, Reader
-from surprise.model_selection import train_test_split, GridSearchCV
-from surprise import KNNBasic, KNNWithMeans
-from surprise import accuracy
+    return normalized, user_lookup, item_lookup, user_items
 
-reader = Reader(rating_scale=(1, 5))
 
-data = Dataset.load_from_df(df[['userId', 'movieId', 'rating']], reader)
+def predict_item_cf(test, item_vectors, item_lookup, user_items, global_mean):
+    predictions = []
 
-print("Data loaded into Surprise format.")
+    for row in test.itertuples(index=False):
+        movie_idx = item_lookup.get(row.movieId)
+        history = user_items.get(row.userId)
 
-from surprise.model_selection import train_test_split
+        if movie_idx is None or history is None:
+            predictions.append(global_mean)
+            continue
 
-trainset, testset = train_test_split(data, test_size=0.2, random_state=42)
+        rated_item_indices, user_ratings = history
+        sims = item_vectors[movie_idx].dot(item_vectors[rated_item_indices].T).toarray().ravel()
+        denom = np.abs(sims).sum()
 
-print(f"Training set size: {trainset.n_ratings}")
-print(f"Test set size: {len(testset)}")
+        if denom == 0:
+            predictions.append(global_mean)
+        else:
+            centered = user_ratings - global_mean
+            predictions.append(global_mean + float(np.dot(sims, centered) / denom))
 
-param_grid_knn_basic = {
-    'k': [20, 40, 60],
-    'sim_options': {
-        'name': ['msd', 'cosine', 'pearson'],
-        'user_based': [False]  # Item-based similarity
-    }
-}
-gs_knn_basic = GridSearchCV(KNNBasic, param_grid_knn_basic, measures=['rmse', 'mae'], cv=3, n_jobs=-1)
-gs_knn_basic.fit(data)
+    return np.clip(np.array(predictions), 1, 5)
 
-print("KNNBasic - Best RMSE score:", gs_knn_basic.best_score['rmse'])
-print("KNNBasic - Best parameters:", gs_knn_basic.best_params['rmse'])
 
-print("KNNBasic - Best MAE score:", gs_knn_basic.best_score['mae'])
-print("KNNBasic - Best parameters:", gs_knn_basic.best_params['mae'])
+def main():
+    df = load_ratings()
+    train, test = train_test_split(df, test_size=0.2, random_state=42)
+    global_mean = train["rating"].mean()
+
+    item_vectors, _, item_lookup, user_items = build_item_user_matrix(train)
+    predictions = predict_item_cf(test, item_vectors, item_lookup, user_items, global_mean)
+
+    rmse = np.sqrt(mean_squared_error(test["rating"], predictions))
+    mae = mean_absolute_error(test["rating"], predictions)
+
+    print("Item-Based Collaborative Filtering Performance")
+    print("RMSE:", round(rmse, 4))
+    print("MAE:", round(mae, 4))
+
+
+if __name__ == "__main__":
+    main()

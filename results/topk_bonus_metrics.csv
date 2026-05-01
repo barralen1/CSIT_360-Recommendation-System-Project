@@ -1,0 +1,5 @@
+model,k,precision_at_k,recall_at_k,evaluated_users,negative_sample_size
+Global Average,5,0.0092,0.0461,6634,100
+Global Average,10,0.0099,0.0992,6634,100
+Item-Based CF,5,0.0269,0.1346,6634,100
+Item-Based CF,10,0.0235,0.2349,6634,100

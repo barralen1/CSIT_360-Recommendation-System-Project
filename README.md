@@ -46,10 +46,15 @@ pip install -r requirements.txt
 1. **Clone the repository:**
 git clone https://github.com/barralen1/CSIT_360-Recommendation-System-Project.git   
 
-2. **Place the dataset file** (`movie-ratings.txt`) in the project directory or the designated `/data` folder.
+2. **Dataset files:** This repository includes `data/raw/movie-ratings.txt` for the required models and `data/raw/trusts.txt` for the optional trust-network bonus. The cleaned ratings file is saved as `data/processed/cleaned_ratings.csv`.
 
 3. **Run the main scripts:**
-   jupyter notebook 01_eda.ipynb, Model_Comparison (1).ipynb
+   - `python src/preprocessing.py`
+   - `python src/global_avg.py`
+   - `python src/itemcf.py`
+   - `python src/bonus_topk_trust.py`
+   - `jupyter notebook notebooks/01_eda.ipynb`
+   - `jupyter notebook notebooks/Model_Comparison.ipynb`
    
 ## Summary of Results
 
@@ -58,8 +63,27 @@ Two recommendation algorithms were implemented and evaluated using **RMSE**
 
 | Model              | RMSE  | MAE   |
 |--------------------|-------|-------|
-| Global Average     | Lower | Higher|
-| Item-Based CF (KNN)| Higher| Lower |
+| Global Average     | 1.0821| 0.8351|
+| Item-Based CF (KNN)| 1.1004| 0.8268|
+
+### Extra Credit Results
+
+The project also includes both optional CSIT 360 bonus opportunities:
+
+1. **Top-K Evaluation:** Precision@K and Recall@K were calculated using a leave-one-positive-out setup. For each evaluated user, one rating of 4 or 5 was held out as the relevant item, and 100 unrated movies were sampled as ranking candidates.
+
+| Model | K | Precision@K | Recall@K |
+|-------|---|-------------|----------|
+| Global Average | 5 | 0.0092 | 0.0461 |
+| Global Average | 10 | 0.0099 | 0.0992 |
+| Item-Based CF | 5 | 0.0269 | 0.1346 |
+| Item-Based CF | 10 | 0.0235 | 0.2349 |
+
+2. **Trust Network Summary:** The `trusts.txt` file was analyzed as an optional trust-network component. It contains 40,133 trust links, 1,438 unique trustors, 4,299 unique trustees, and 4,658 unique users in the trust network. The average trust rating is 1.0, with no duplicate trust links and no self-trust links.
+
+The bonus output files are saved in:
+- `results/topk_bonus_metrics.csv`
+- `results/trust_network_bonus_summary.csv`
 
 ### Algorithm Descriptions
 
