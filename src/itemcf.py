@@ -14,7 +14,7 @@ column_names = [
 ]
 
 df = pd.read_csv(
-    "movie-ratings.txt",
+    "data/raw/movie-ratings.txt",
     sep=",",
     names=column_names,
     header=None
